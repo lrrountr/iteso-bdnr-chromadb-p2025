@@ -19,8 +19,8 @@ collection = client.get_or_create_collection(name="my_knowledge_base")
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Load the model once at the application start
-model_name = "deepset/roberta-base-squad2"
-qa_pipeline = pipeline("question-answering", model=model_name, tokenizer=model_name)
+model_name = "gpt2"
+generator = pipeline("text-generation", model=model_name)
 
 def generate_id(content):
     return hashlib.sha256(content.encode('utf-8')).hexdigest()
@@ -53,13 +53,16 @@ class QueryResource:
 
              # Validate context before passing to the QA pipeline
             if not context.strip():
-                raise ValueError("No relevant information found.")
+                context = ""
 
+            input_text = f"Context: {context}\n\nQuestion: {query}\nAnswer:"
             # Generate response using QA pipeline
-            response = qa_pipeline(question=query, context=context)
+            response = generator(input_text, max_length=100, num_return_sequences=1, truncation=True)
 
             # Extract the generated answer
-            generated_response = response.get("answer", "No answer generated.")
+            generated_response = "No answer found."
+            if response:
+                generated_response = response[0]["generated_text"]
 
             # Return the response
             resp.media = {
