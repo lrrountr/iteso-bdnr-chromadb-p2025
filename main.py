@@ -19,6 +19,7 @@ def upload_documents(file_path):
             for doc in documents:
                 contents.append(doc["content"])
             data["contents"] = contents
+            print(data)
             response = requests.post(endpoint, json=data)
         if response.status_code == 200:
             print("Document uploaded successfully.")

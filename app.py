@@ -1,22 +1,26 @@
+import os
 import json
 import hashlib
 
 import falcon.asgi
 
-from chromadb import Client
+from chromadb import PersistentClient
 from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 from transformers import pipeline
 
 # Initialize ChromaDB
-client = Client(Settings())
-collection = client.create_collection("my_knowledge_base")
+DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(DIR, 'data')
+client = PersistentClient(path=DB_PATH, settings=Settings(allow_reset=True, anonymized_telemetry=False))
+collection = client.get_or_create_collection(name="my_knowledge_base")
 
 # Initialize Sentence Transformer model
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Load the model once at the application start
-qa_pipeline = pipeline("question-answering", model="deepset/roberta-base-squad2")
+model_name = "deepset/roberta-base-squad2"
+qa_pipeline = pipeline("question-answering", model=model_name, tokenizer=model_name)
 
 def generate_id(content):
     return hashlib.sha256(content.encode('utf-8')).hexdigest()
@@ -27,7 +31,7 @@ class QueryResource:
         Handle POST requests to answer queries
         """
         try:
-            raw_json = req.bounded_stream.read()
+            raw_json = await req.bounded_stream.read()
             request_data = json.loads(raw_json)
 
             # Extract query
@@ -74,7 +78,7 @@ class KnowledgeResource:
         Handle POST requests to upload new documents
         """
         try:
-            raw_json = req.bounded_stream.read()
+            raw_json = await req.bounded_stream.read()
             request_data = json.loads(raw_json)
 
             contents = request_data["contents"]
