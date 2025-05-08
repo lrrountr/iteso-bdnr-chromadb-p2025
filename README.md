@@ -23,7 +23,7 @@ pip install -r requirements.txt
 ```
 
 ### The examples directory have a couple of intro scripts to familiarize yourself with ChromaDB
-In memory run
+Local run
 ```
 cd examples
 python chromadb_local.py
